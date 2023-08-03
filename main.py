@@ -82,8 +82,8 @@ Flapper_av_filter = FIR_Filter(Zero_av, [1] * 20, Desired_Sensor_gap)
 
 Angular_velocity_filter = LPSF(Zero_av, 8, 0.8, Desired_Sensor_gap)
 
-TCP_IP = '192.168.1.104'
-UDP_IP_port = ('192.168.1.100', 6666)
+TCP_IP = '192.168.1.142'
+UDP_IP_port = ('192.168.1.147', 6666)
 TCP_PORT = 22221
 # threading.main_thread()
 
@@ -98,7 +98,7 @@ here_qualisys_con. start_listening()
 
 leftwing_dorsal_PWM = 900
 leftwing_vental_PWM = 2100
-leftwing_channel    = 0
+leftwing_channel    = 1
 ### in the real RC channel is 1, always plus 1, these value should be checked by real experiment.
 
 rightwing_dorsal_PWM = 900
@@ -111,7 +111,7 @@ flap_channel    = 2
 
 rudder_left_PWM = 2100
 rudder_right_PWM = 900
-rudder_channel    = 1
+rudder_channel    = 0
 
 
 MultiProtocol_ser = serial.Serial(
@@ -341,19 +341,20 @@ def Controlling():
         SO3_Attitude_Controller. Generate_control_signal( Flapper_att, Angle_vel,
                                          R_ident, A_zero)
 
-        K_p_throttle_com = 4
-        K_d_throttle_com = 1
+        K_p_throttle_com = 3
+        K_d_throttle_com = 1.5
         K_i_throttle_com = 0.02
+        I_sat = 20
 
         throttle_com = (p_d[2, 0] - Flapper_pos_filter.Get_filtered()[2, 0]) * K_p_throttle_com\
                        + (v_d[2, 0] - Here_pos_observer.v_observer[2, 0] ) * K_d_throttle_com +\
                        Z_pos_Int * K_i_throttle_com
-        Z_pos_Int += (1.5 - Flapper_pos_filter.Get_filtered()[2, 0]) * Controller_gap
+        Z_pos_Int += (p_d[2, 0] - Flapper_pos_filter.Get_filtered()[2, 0]) * Controller_gap
 
-        if Z_pos_Int > 10:
-            Z_pos_Int = 10
-        if Z_pos_Int < -10:
-            Z_pos_Int = -10
+        if Z_pos_Int > I_sat:
+            Z_pos_Int = I_sat
+        if Z_pos_Int < -I_sat:
+            Z_pos_Int = -I_sat
 
         if throttle_com > 1:
             throttle_com = 1
@@ -511,7 +512,7 @@ def sensoring_listen_func():
         schedule.run_pending()
         # if you want to check pending as soon as possible,
         # note the following line.
-        # However, due to the checking still consume the machine
+        # However, due to the fact that the checking still consume the machine
         # computing resources, the final performance is not determined.
         time.sleep(Pending_gap)
 
