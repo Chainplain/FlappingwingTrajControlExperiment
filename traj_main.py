@@ -26,7 +26,7 @@ import scipy.io as scio
 
 hostname = socket.gethostname()
 RecordTime = time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime(time.time()))
-Record_file_name = hostname + '_' + RecordTime + 'FlapperInQualisys.mat'
+Record_file_name = hostname + '_' + RecordTime + 'FlapperInQualisysTraj.mat'
 
 Program_life_length = 40 # in seconds
 
@@ -158,7 +158,7 @@ Last_pos = np.mat([  [0.0], [0.0], [0.0]])
 Last_att = np.mat([  [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
 
 R_d = np.mat([  [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
-omega_d = np.matrix([[0],[0],[0]])
+omega_d = np.matrix([[0],[0],[1]])
 
 Torward_direction = np.mat([  [1], [0], [0]])
 
@@ -175,7 +175,7 @@ record_Observer_p_list = []
 record_Observer_v_list = []
 record_Observer_z_list = []
 record_u_t_list = []
-record_orientation_list = []
+
 
 Here_ATG = ATG(R_d, omega_d, Desired_Controller_gap)
 
@@ -295,30 +295,30 @@ def Controlling():
         global throttle_com, roll_com, pitch_com, yaw_com, controlling_count, R_d, p_d, Angle_vel, u_t, Z_pos_Int
         current_stamp = time.time()
 
-        # k_rate = 1
-        # t_rate = 0.2
-        # p_d_z = 1
-        # v_d_z = 0
-        # d_v_d_z = 0
-        #
-        # Here_time = current_stamp - start_stamp
-        #
-        # p_d_x = - k_rate * np.cos(np.pi * t_rate * Here_time) + k_rate
-        # p_d_y = k_rate * np.sin(np.pi * t_rate * Here_time)
-        #
-        # v_d_x = k_rate * np.pi * t_rate * np.sin(np.pi * t_rate * Here_time)
-        # v_d_y = k_rate * np.pi * t_rate * np.cos(np.pi * t_rate * Here_time)
-        #
-        # d_v_d_x = k_rate * np.pi * t_rate * np.pi * t_rate * np.cos(np.pi * t_rate * Here_time)
-        # d_v_d_y = - k_rate * np.pi * t_rate * np.pi * t_rate * np.sin(np.pi * t_rate * Here_time)
-        #
-        # p_d = np.mat([[p_d_x], [p_d_y], [p_d_z]])
-        # v_d = np.mat([[v_d_x], [v_d_y], [v_d_z]])
-        # d_v_d = np.mat([[d_v_d_x], [d_v_d_y], [d_v_d_z]])
+        k_rate = 1
+        t_rate = 0.2
+        p_d_z = 1.5
+        v_d_z = 0
+        d_v_d_z = 0
+        
+        Here_time = current_stamp - start_stamp
+        
+        p_d_x = - k_rate * np.cos(np.pi * t_rate * Here_time) + k_rate
+        p_d_y = k_rate * np.sin(np.pi * t_rate * Here_time)
+        
+        v_d_x = k_rate * np.pi * t_rate * np.sin(np.pi * t_rate * Here_time)
+        v_d_y = k_rate * np.pi * t_rate * np.cos(np.pi * t_rate * Here_time)
+        
+        d_v_d_x = k_rate * np.pi * t_rate * np.pi * t_rate * np.cos(np.pi * t_rate * Here_time)
+        d_v_d_y = - k_rate * np.pi * t_rate * np.pi * t_rate * np.sin(np.pi * t_rate * Here_time)
+        
+        p_d = np.mat([[p_d_x], [p_d_y], [p_d_z]])
+        v_d = np.mat([[v_d_x], [v_d_y], [v_d_z]])
+        d_v_d = np.mat([[d_v_d_x], [d_v_d_y], [d_v_d_z]])
 
-        p_d = np.mat([[0], [0], [1.5]])
-        v_d = np.mat([[0], [0], [0]])
-        d_v_d = np.mat([[0], [0], [0]])
+        # p_d = np.mat([[0], [0], [1.5]])
+        # v_d = np.mat([[0], [0], [0]])
+        # d_v_d = np.mat([[0], [0], [0]])
 
         # Flight_direction = np.mat([[v_d_x], [v_d_y], [0]])
         Flight_direction = np.mat([[1], [0], [0]])
@@ -338,33 +338,30 @@ def Controlling():
         # print('Here_ARG.Omega_f', Here_ARG.Omega_f)
         # SO3_Attitude_Controller. Generate_control_signal( Flapper_att, Angle_vel,
         #                                  R_d, Here_ARG.Omega_f)
-        R_ident= np.mat([[1.0, 0.0, 0.0],[0.0, 1.0, 0.0],[0.0, 0.0, 1.0]])
+        # R_ident= np.mat([[1.0, 0.0, 0.0],[0.0, 1.0, 0.0],[0.0, 0.0, 1.0]])
 
-        Here_ATG. march_forward(Here_ATG. orientation, Here_ATG. omega)
+        # Here_ATG. march_forward(Here_ATG. orientation, Here_ATG. omega)
         # R_rot_Y_20_deg = np.mat([[0.9396926, 0.0000000, 0.3420202],
         #                          [0.0000000, 1.0000000, 0.0000000],
         #                          [-0.3420202, 0.0000000, 0.9396926]])
         A_zero = np.mat([[ 0.0], [0.0], [0.0]])
         SO3_Attitude_Controller. Generate_control_signal( Flapper_att, Angle_vel,
-                                        Here_ATG. orientation, Here_ATG. omega)
+                                        R_d, Here_ARG. omega)
 
         K_p_throttle_com = 3
-        K_d_throttle_com = 0.5
+        K_d_throttle_com = 1.5
         K_i_throttle_com = 0.02
-        I_sat = 10
+        I_sat = 20
+
+        throttle_com = (p_d[2, 0] - Flapper_pos_filter.Get_filtered()[2, 0]) * K_p_throttle_com\
+                       + (v_d[2, 0] - Here_pos_observer.v_observer[2, 0] ) * K_d_throttle_com +\
+                       Z_pos_Int * K_i_throttle_com
+        Z_pos_Int += (p_d[2, 0] - Flapper_pos_filter.Get_filtered()[2, 0]) * Controller_gap
 
         if Z_pos_Int > I_sat:
             Z_pos_Int = I_sat
         if Z_pos_Int < -I_sat:
             Z_pos_Int = -I_sat
-
-        throttle_com = (p_d[2, 0] - Flapper_pos_filter.Get_filtered()[2, 0]) * K_p_throttle_com\
-                       + (v_d[2, 0] - Here_pos_observer.v_observer[2, 0] ) * K_d_throttle_com +\
-                       Z_pos_Int * K_i_throttle_com
-        
-        Z_pos_Int += (p_d[2, 0] - Flapper_pos_filter.Get_filtered()[2, 0]) * Controller_gap
-
-       
 
         if throttle_com > 1:
             throttle_com = 1
@@ -403,7 +400,7 @@ def Distributing():
         # we use a indicator to know
         global throttle_com, roll_com, pitch_com, yaw_com, distributing_count, Output_channel_data
         # Output_channel_data[flap_channel] = flap_min_PWM
-        Output_channel_data[flap_channel] = (1500 - 500 * throttle_com)
+        Output_channel_data[flap_channel] = (1500 - 700 * throttle_com)
 
         Output_channel_data[leftwing_channel] = 1500 - 500 * pitch_com + 300 * yaw_com
         Output_channel_data[rudder_channel] = 1500 - 700 * roll_com
@@ -493,7 +490,7 @@ def Analyzing():
 
 def Recording():
     global Sensor_data, Output_channel_data, R_d, p_d, Angle_vel, Flapper_pos, throttle_com,\
-            roll_com, pitch_com, yaw_com, start_stamp, u_t, Here_ATG
+            roll_com, pitch_com, yaw_com, start_stamp, u_t
         # record_Sensor_data_list, record_Output_channel_data_list, record_R_d_list, record_p_d_list
 
     record_Sensor_data_list.append(Sensor_data)
@@ -510,7 +507,6 @@ def Recording():
     record_Observer_v_list. append(Here_pos_observer.v_observer)
     record_Observer_z_list. append(Here_pos_observer.z_observer)
     record_u_t_list.append(u_t)
-    record_orientation_list.append(Here_ATG.orientation)
 
     record_time_stamp_list. append(time.time() - start_stamp)
 
@@ -596,7 +592,7 @@ while True:
 scio.savemat(Record_file_name, {'record_Sensor_data': record_Sensor_data_list,
                                 'record_Output_channel_data': record_Output_channel_data_list,
                                 'record_com': record_com_list,
-                                'record_R_d': record_orientation_list,
+                                'record_R_d': record_R_d_list,
                                 'record_p_d': record_p_d_list,
                                 'record_time_stamp': record_time_stamp_list,
                                 'record_Flapper_att': record_Flapper_att_list,
