@@ -123,9 +123,9 @@ MultiProtocol_ser = serial.Serial(
         bytesize=serial.EIGHTBITS
     )
 
-K_roll = 0.5
-K_pitch = 1
-K_yaw = 1
+K_roll = 1
+K_pitch = 0.3
+K_yaw = 0.5
 
 #distributing
 throttle_com = 0
@@ -161,6 +161,10 @@ R_d = np.mat([  [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
 omega_d = np.matrix([[0],[0],[0]])
 
 Torward_direction = np.mat([  [1], [0], [0]])
+
+yaw_Int = 0
+pitch_Int = 0
+roll_Int =0
 
 record_Sensor_data_list = []
 record_com_list = []
@@ -247,7 +251,7 @@ def Sensoring():
         if Flapper_pos[1, 0] < -3 or Flapper_pos[1, 0] > 3:
             is_fall_flag = True
 
-        if Flapper_pos[0, 0] < -3 or Flapper_pos[0, 0] > 3:
+        if Flapper_pos[0, 0] < -3 or Flapper_pos[0, 0] > 5:
             is_fall_flag = True
 
 
@@ -292,7 +296,9 @@ def Sensoring():
 
 def Controlling():
         # Circular Flight
-        global throttle_com, roll_com, pitch_com, yaw_com, controlling_count, R_d, p_d, Angle_vel, u_t, Z_pos_Int
+        global throttle_com, roll_com, pitch_com, yaw_com,\
+            roll_Int, pitch_Int, yaw_Int,\
+            controlling_count, R_d, p_d, Angle_vel, u_t, Z_pos_Int
         current_stamp = time.time()
 
         # k_rate = 1
@@ -376,10 +382,9 @@ def Controlling():
         # pitch_com = K_pitch * SO3_Attitude_Controller.u[1,0]
         # yaw_com   = K_yaw * SO3_Attitude_Controller.u[2,0]
 
-        yaw_com  =  K_yaw * SO3_Attitude_Controller.u[0,0]
-        pitch_com =  K_pitch * SO3_Attitude_Controller.u[1,0]
-        roll_com   =  K_roll * SO3_Attitude_Controller.u[2,0]
-
+        yaw_com  =  K_yaw * SO3_Attitude_Controller.u[0,0] 
+        pitch_com =  K_pitch * SO3_Attitude_Controller.u[1,0] 
+        roll_com   =  K_roll * SO3_Attitude_Controller.u[2,0] 
         if yaw_com > 1:
             yaw_com = 1
         if yaw_com < -1:
@@ -395,19 +400,65 @@ def Controlling():
         if roll_com < -1:
             roll_com = -1
 
+        K_att_I = 0.1
+
+        yaw_Int += yaw_com * K_att_I
+        pitch_Int += yaw_com * K_att_I
+        roll_Int += yaw_com * K_att_I
+
+        I_att_sat = 0.5
+
+        if yaw_Int > I_att_sat:
+            yaw_Int = I_att_sat
+        if yaw_Int < -I_att_sat:
+            yaw_Int = -I_att_sat
+
+        if pitch_Int > I_att_sat:
+            pitch_Int = I_att_sat
+        if pitch_Int < -I_att_sat:
+            pitch_Int = -I_att_sat
+
+        if roll_Int > I_att_sat:
+            roll_Int = I_att_sat
+        if roll_Int < -I_att_sat:
+            roll_Int = -I_att_sat
+
+     
+
 
 
         controlling_count += 1
 
 def Distributing():
         # we use a indicator to know
-        global throttle_com, roll_com, pitch_com, yaw_com, distributing_count, Output_channel_data
+        global throttle_com, roll_com, pitch_com, yaw_com, distributing_count, Output_channel_data,\
+                roll_Int, pitch_Int, yaw_Int
         # Output_channel_data[flap_channel] = flap_min_PWM
         Output_channel_data[flap_channel] = (1500 - 500 * throttle_com)
 
-        Output_channel_data[leftwing_channel] = 1500 - 500 * pitch_com + 300 * yaw_com
-        Output_channel_data[rudder_channel] = 1500 - 700 * roll_com
-        Output_channel_data[rightwing_channel] = 1500 - 500 * pitch_com - 300 * yaw_com
+
+        here_r = roll_Int + roll_com
+        here_p = pitch_Int + pitch_com
+        here_y = yaw_Int + yaw_com
+
+        if here_y > 1:
+            here_y = 1
+        if here_y < -1:
+            here_y = -1
+
+        if here_p > 1:
+            here_p = 1
+        if here_p < -1:
+            here_p = -1
+
+        if here_r > 1:
+            here_r = 1
+        if here_r < -1:
+            here_r = -1
+
+        Output_channel_data[leftwing_channel] = 1500 - 500 * here_p + 300 * here_y
+        Output_channel_data[rudder_channel] = 1500 - 700 * here_r
+        Output_channel_data[rightwing_channel] = 1500 - 500 * here_p - 300 * here_y
         # print('roll_com' + str(roll_com) + 'pitch_com' + str(pitch_com) + 'yaw_com' + str(yaw_com) )
 
         # leftwing_dorsal_PWM = 900
