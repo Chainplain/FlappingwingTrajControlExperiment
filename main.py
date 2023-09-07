@@ -76,7 +76,7 @@ Postion_Controller = PTTC(Flapper_Robot_Mass, Desired_Controller_gap)
 Postion_Controller.Control_gap = Controller_gap
 
 Flapper_att_filter = FIR_Filter(Identical_rot, [1] * 20, Desired_Sensor_gap)
-Flapper_pos_filter = FIR_Filter(Zero_av, [1] * 10, Desired_Sensor_gap)
+Flapper_pos_filter = FIR_Filter(Zero_av, [1] * 5, Desired_Sensor_gap)
 
 
 Flapper_av_filter = FIR_Filter(Zero_av, [1] * 20, Desired_Sensor_gap)
@@ -123,9 +123,9 @@ MultiProtocol_ser = serial.Serial(
         bytesize=serial.EIGHTBITS
     )
 
-K_roll = 1
-K_pitch = 0.3
-K_yaw = 0.5
+K_roll = 0.5
+K_pitch = 0.5
+K_yaw = 1
 
 #distributing
 throttle_com = 0
@@ -242,7 +242,7 @@ def Sensoring():
             -2 < Flapper_pos[0, 0] < 2:
             is_fall_flag = False
 
-        if Flapper_pos[2, 0] < 0.2 or Flapper_pos[2, 0] > 3:
+        if Flapper_pos[2, 0] < 0.3 or Flapper_pos[2, 0] > 2:
             is_fall_flag = True
 
         # if here_qualisys_con.loop_delay > 20:
@@ -351,13 +351,14 @@ def Controlling():
         #                          [0.0000000, 1.0000000, 0.0000000],
         #                          [-0.3420202, 0.0000000, 0.9396926]])
         A_zero = np.mat([[ 0.0], [0.0], [0.0]])
+        # print('Here_ATG. orientation:',Here_ATG. orientation)
         SO3_Attitude_Controller. Generate_control_signal( Flapper_att, Angle_vel,
-                                        Here_ATG. orientation, Here_ATG. omega)
+                                        Here_ATG. orientation, Zero_av)
 
         K_p_throttle_com = 3
         K_d_throttle_com = 0.5
-        K_i_throttle_com = 0.02
-        I_sat = 10
+        K_i_throttle_com = 0.1
+        I_sat = 0.2
 
         if Z_pos_Int > I_sat:
             Z_pos_Int = I_sat
@@ -403,10 +404,10 @@ def Controlling():
         K_att_I = 0.1
 
         yaw_Int += yaw_com * K_att_I
-        pitch_Int += yaw_com * K_att_I
-        roll_Int += yaw_com * K_att_I
+        pitch_Int += pitch_com * K_att_I
+        roll_Int += roll_com * K_att_I
 
-        I_att_sat = 0.5
+        I_att_sat = 0.1
 
         if yaw_Int > I_att_sat:
             yaw_Int = I_att_sat
@@ -437,9 +438,9 @@ def Distributing():
         Output_channel_data[flap_channel] = (1500 - 500 * throttle_com)
 
 
-        here_r = roll_Int + roll_com
-        here_p = pitch_Int + pitch_com
-        here_y = yaw_Int + yaw_com
+        here_r = roll_com#roll_Int + roll_com
+        here_p = pitch_com#pitch_Int + pitch_com
+        here_y = yaw_com#yaw_Int + yaw_com
 
         if here_y > 1:
             here_y = 1
@@ -456,9 +457,9 @@ def Distributing():
         if here_r < -1:
             here_r = -1
 
-        Output_channel_data[leftwing_channel] = 1500 - 500 * here_p + 300 * here_y
-        Output_channel_data[rudder_channel] = 1500 - 700 * here_r
-        Output_channel_data[rightwing_channel] = 1500 - 500 * here_p - 300 * here_y
+        Output_channel_data[leftwing_channel] = 1500 - 300 * here_p + 400 * here_y
+        Output_channel_data[rudder_channel] = 1500 - 500 * here_r
+        Output_channel_data[rightwing_channel] = 1500 - 300 * here_p - 400 * here_y
         # print('roll_com' + str(roll_com) + 'pitch_com' + str(pitch_com) + 'yaw_com' + str(yaw_com) )
 
         # leftwing_dorsal_PWM = 900
